@@ -1,0 +1,52 @@
+# 忽略文件
+assets/
+output/
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# 环境文件
+.env
+venv/
+ENV/
+
+# 单元测试覆盖率
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+
+# 临时文件
+*.swp
+*.swo
+~*
+
+# 其他常见
+*.bak
+*.tmp
+*.orig
