@@ -1,3 +1,4 @@
 process_text_to_voice.py 是一个用于将文本文件转换为语音文件的脚本。
 process_more_file.py 是一个用于批量处理文本文件的脚本。
 yinpin.md 当前复刻声音
+bidirection_client.py 中增加单句测试功能

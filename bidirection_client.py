@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+import argparse
+import os
 import copy
 import json
 import logging
@@ -50,6 +52,7 @@ class BidirectionTTSClient:
         loudness_rate: float = 0,
         emotion: str = "neutral",
         emotion_scale: float = 0,
+        pitch_rate: int = 0,
     ) -> None:
         """
         使用双向协议合成文本为音频文件。支持通过 resource_id 切换 TTS/声音复刻。
@@ -77,6 +80,9 @@ class BidirectionTTSClient:
             )
 
             # Base request
+            additions = {"disable_markdown_filter": False}
+            if pitch_rate != 0:
+                additions["post_process"] = {"pitch": pitch_rate}
             base_request = {
                 "user": {"uid": str(uuid.uuid4())},
                 "namespace": "BidirectionalTTS",
@@ -87,7 +93,7 @@ class BidirectionTTSClient:
                         "sample_rate": self.sample_rate,
                         "enable_timestamp": True,
                     },
-                    "additions": json.dumps({"disable_markdown_filter": False}),
+                    "additions": json.dumps(additions),
                 },
             }
             print("#"*100,)
@@ -104,6 +110,8 @@ class BidirectionTTSClient:
                 start_session_request["req_params"]["audio_params"]["emotion"] = emotion
             if emotion_scale != 0:
                 start_session_request["req_params"]["audio_params"]["emotion_scale"] = emotion_scale
+            
+            
             await start_session(
                 websocket, json.dumps(start_session_request).encode(), session_id
             )
@@ -159,3 +167,45 @@ class BidirectionTTSClient:
         可在调用层覆盖。
         """
         return "seed-icl-2.0" if voice_type.startswith("S_") else "seed-tts-2.0"
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--text", type=str, default="信、信、信号解、解码中	哔哔——警告！检测到高浓度“吃货危机”！内容播报:“机械章鱼军团踹了章鱼族洞穴，美食原料都被他们霍霍了！千年蜂蜜洒一地、大墨鱼被追得喷墨跑，再不来救场，以后没深海零食吃啦！”")
+    parser.add_argument("--voice_type", type=str, default="S_7ndFaTPI1")
+    parser.add_argument("--output", type=str, default="output/single_test.mp3")
+    parser.add_argument("--appid", type=str, default="7913609641")
+    parser.add_argument("--access_token", type=str, default="teLzt62B8gRhfKVOqAbEpiCgDl1Jxcjq")
+    parser.add_argument("--resource_id", type=str, default=None)
+    parser.add_argument("--speech_rate", type=float, default=10)
+    parser.add_argument("--loudness_rate", type=float, default=0)
+    parser.add_argument("--emotion", type=str, default="neutral")
+    parser.add_argument("--emotion_scale", type=float, default=0)
+    parser.add_argument("--pitch_rate", type=int, default=0)
+    return parser.parse_args()
+
+async def main(args=None):
+    if args is None:
+        args = parse_args()
+    if not args.appid or not args.access_token:
+        raise RuntimeError("appid 或 access_token 未提供")
+    client = BidirectionTTSClient(appid=args.appid, access_token=args.access_token)
+    voice_type = args.voice_type
+    resource_id = args.resource_id or BidirectionTTSClient.get_resource_id_for_voice(voice_type)
+    output_file = args.output
+    out_dir = os.path.dirname(output_file) or "."
+    os.makedirs(out_dir, exist_ok=True)
+    await client.synthesize_to_file(
+        text=args.text,
+        voice_type=voice_type,
+        resource_id=resource_id,
+        output_file=output_file,
+        encoding="mp3",
+        speech_rate=args.speech_rate,
+        loudness_rate=args.loudness_rate,
+        emotion=args.emotion,
+        emotion_scale=args.emotion_scale,
+        pitch_rate=args.pitch_rate,
+    )
+
+if __name__ == "__main__":
+    asyncio.run(main())
