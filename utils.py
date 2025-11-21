@@ -200,6 +200,23 @@ class ToNlpTexts:
                 })
         
         return nlp_texts
+
+    def parse_dialogue_format_keep_names(self, text: str) -> List[Dict[str, Any]]:
+        nlp_texts = []
+        cleaned_text = self.clean_text_markers(text)
+        lines = cleaned_text.split('\n')
+        for idx, line in enumerate(lines):
+            speaker, content = self.extract_speaker_and_content(line)
+            if speaker and content:
+                speaker = re.sub(r'（[^）]*）', '', speaker).strip()
+                speaker = re.sub(r'\([^)]*\)', '', speaker).strip()
+                nlp_texts.append({
+                    "segment_id": idx,
+                    "speaker_name": speaker,
+                    "voice_type": None,
+                    "text": content,
+                })
+        return nlp_texts
     
     def convert_docx_to_nlp_texts(self, docx_file_path: str) -> List[Dict[str, Any]]:
         """
@@ -260,6 +277,13 @@ class ToNlpTexts:
             raise Exception("未能从Markdown中解析出有效的对话内容")
         return nlp_texts
 
+    def convert_md_to_nlp_texts_keep_names(self, md_file_path: str) -> List[Dict[str, Any]]:
+        text_content = self.read_md_file(md_file_path)
+        nlp_texts = self.parse_dialogue_format_keep_names(text_content)
+        if not nlp_texts:
+            raise Exception("未能从Markdown中解析出有效的对话内容")
+        return nlp_texts
+
     def convert_file_to_nlp_texts(self, file_path: str) -> List[Dict[str, Any]]:
         """
         统一入口：根据文件扩展名（.docx / .md / .markdown）转换为 nlp_texts。
@@ -272,6 +296,18 @@ class ToNlpTexts:
             return self.convert_docx_to_nlp_texts(file_path)
         elif ext in {".md", ".markdown"}:
             return self.convert_md_to_nlp_texts(file_path)
+        else:
+            raise Exception(f"不支持的文件类型: {ext}，请使用 .docx 或 .md/.markdown")
+
+    def convert_file_to_nlp_texts_keep_names(self, file_path: str) -> List[Dict[str, Any]]:
+        if not os.path.isfile(file_path):
+            raise Exception(f"文件不存在: {file_path}")
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext == ".docx":
+            text_content = self.read_docx_file(file_path)
+            return self.parse_dialogue_format_keep_names(text_content)
+        elif ext in {".md", ".markdown"}:
+            return self.convert_md_to_nlp_texts_keep_names(file_path)
         else:
             raise Exception(f"不支持的文件类型: {ext}，请使用 .docx 或 .md/.markdown")
 
@@ -336,6 +372,5 @@ if __name__ == "__main__":
     extract_speaker_and_content = utils.extract_speaker_and_content
     text = "《西游记》第一回播客：石猴蹦出当大王啦！"
     print(extract_speaker_and_content(text))
-
 
 
